@@ -66,13 +66,14 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 #apikey-submit{width:100%;background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:14px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:0.15em;cursor:pointer}
 .key-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.6}
 .key-note a{color:var(--accent);text-decoration:none}
+#forget-key{background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;cursor:pointer;text-decoration:underline;padding:4px}
 </style>
 </head>
 <body>
 <div id="apikey-screen">
   <div class="jarvis-logo">JARVIS</div>
   <div class="tagline">Atelier Domingue · Workshop AI</div>
-  <div class="key-note">Enter your Anthropic API key to initialize.</div>
+  <div class="key-note">Enter your Anthropic API key.<br>It will be remembered on this device.</div>
   <input id="apikey-input" type="password" placeholder="sk-ant-..." autocomplete="off"/>
   <button id="apikey-submit" onclick="initJarvis()">INITIALIZE SYSTEM</button>
   <div class="key-note">Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
@@ -81,6 +82,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   <div id="header">
     <div class="logo">JARVIS <span>/ AD</span></div>
     <div style="display:flex;align-items:center;gap:8px">
+      <button id="forget-key" onclick="forgetKey()">RESET KEY</button>
       <div id="status-label">OFFLINE</div>
       <div id="status-dot"></div>
     </div>
@@ -118,17 +120,47 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div>
 </div>
 <script>
+const KEY_STORAGE = 'jarvis_ad_api_key';
 let apiKey='',capturedImage=null,stream=null,recognition=null,isListening=false,conversationHistory=[];
-function initJarvis(){
-  const val=document.getElementById('apikey-input').value.trim();
-  if(!val.startsWith('sk-ant-')&&!val.startsWith('sk-')){alert('Please enter a valid Anthropic API key');return;}
-  apiKey=val;
+
+// Auto-load saved key on startup
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(KEY_STORAGE);
+  if (saved) {
+    apiKey = saved;
+    showApp();
+  }
+  document.getElementById('text-input').addEventListener('keydown', e => {
+    if(e.key==='Enter') sendQuery();
+  });
+});
+
+function showApp() {
   document.getElementById('apikey-screen').style.display='none';
   const app=document.getElementById('app');
   app.style.display='flex';app.style.flexDirection='column';app.style.height='100%';
   setStatus('READY','ready');
   speak('JARVIS online. Workshop systems ready.');
 }
+
+function initJarvis(){
+  const val=document.getElementById('apikey-input').value.trim();
+  if(!val.startsWith('sk-ant-')&&!val.startsWith('sk-')){alert('Please enter a valid Anthropic API key');return;}
+  apiKey=val;
+  localStorage.setItem(KEY_STORAGE, apiKey);
+  showApp();
+}
+
+function forgetKey(){
+  if(confirm('Remove saved API key?')){
+    localStorage.removeItem(KEY_STORAGE);
+    apiKey='';
+    document.getElementById('app').style.display='none';
+    document.getElementById('apikey-screen').style.display='flex';
+    document.getElementById('apikey-input').value='';
+  }
+}
+
 async function toggleCamera(){
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;document.getElementById('camera-feed').srcObject=null;document.getElementById('cam-btn').classList.remove('active-cam');document.getElementById('cam-btn').textContent='📷 CAMERA';document.getElementById('no-camera').style.display='flex';return;}
   try{
@@ -137,8 +169,9 @@ async function toggleCamera(){
     document.getElementById('no-camera').style.display='none';
     document.getElementById('cam-btn').classList.add('active-cam');
     document.getElementById('cam-btn').textContent='📷 LIVE';
-  }catch(e){alert('Camera access denied. Please allow camera access.');}
+  }catch(e){alert('Camera access denied. Please allow camera access in Safari settings.');}
 }
+
 function captureFrame(){
   const video=document.getElementById('camera-feed');
   if(!stream||!video.videoWidth)return false;
@@ -150,6 +183,7 @@ function captureFrame(){
   flash.classList.add('pop');setTimeout(()=>flash.classList.remove('pop'),350);
   return true;
 }
+
 async function sendQuery(overrideText){
   const input=document.getElementById('text-input');
   const question=overrideText||input.value.trim();
@@ -167,7 +201,7 @@ async function sendQuery(overrideText){
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-opus-4-5',max_tokens:400,
-        system:`You are JARVIS, personal AI assistant for Paul, General Manager of Atelier Domingue — a steel doors and windows fabrication shop. You have vision access through a camera. Be confident, precise, direct. Like Tony Stark's JARVIS. Keep responses concise — they will be read aloud. Focus on: weld quality, alignment, fabrication issues, material identification, equipment, measurements. Reference earlier conversation when relevant.`,
+        system:`You are JARVIS, personal AI assistant for Paul, General Manager of Atelier Domingue — a steel doors and windows fabrication shop. You have vision access through a camera. Be confident, precise, direct. Like Tony Stark's JARVIS — capable, calm, slightly dry humor. Keep responses concise — they will be read aloud. Focus on: weld quality, alignment, fabrication issues, material identification, equipment, measurements. Reference earlier conversation when relevant.`,
         messages:conversationHistory.map(m=>({role:m.role,content:m.content}))
       })
     });
@@ -182,11 +216,13 @@ async function sendQuery(overrideText){
   }catch(err){showResponse('Error: '+err.message);setStatus('ERROR','');}
   finally{document.getElementById('send-btn').disabled=false;}
 }
+
 function showResponse(text){
   document.getElementById('response-text').textContent=text;
   document.getElementById('response-panel').classList.add('open');
   setStatus('READY','ready');
 }
+
 function speak(text){
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
@@ -199,6 +235,7 @@ function speak(text){
   utter.onend=()=>setStatus('READY','ready');
   window.speechSynthesis.speak(utter);
 }
+
 function toggleVoice(){
   if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){alert('Voice input requires Chrome. Type your question instead.');return;}
   if(isListening){recognition?.stop();return;}
@@ -210,9 +247,11 @@ function toggleVoice(){
   recognition.onerror=()=>{isListening=false;document.getElementById('voice-btn').classList.remove('active-voice');document.getElementById('voice-btn').textContent='🎙 SPEAK';setStatus('READY','ready');};
   recognition.start();
 }
+
 function setStatus(label,type){document.getElementById('status-label').textContent=label;document.getElementById('status-dot').className=type;}
+
 function clearAll(){capturedImage=null;conversationHistory=[];document.getElementById('response-panel').classList.remove('open');document.getElementById('text-input').value='';window.speechSynthesis?.cancel();setStatus('READY','ready');}
-document.addEventListener('DOMContentLoaded',()=>{document.getElementById('text-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendQuery();});});
+
 window.speechSynthesis?.addEventListener('voiceschanged',()=>{});
 </script>
 </body>

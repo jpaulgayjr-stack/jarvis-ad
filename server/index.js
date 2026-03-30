@@ -172,7 +172,7 @@ app.post('/api/chat', async (req, res) => {
         const systemPrompt = await buildSystemPrompt(session);
 
         const response = await anthropic.messages.create({
-            model: 'claude-sonnet-4-5-20250514',
+            model: 'claude-sonnet-4-5-20241022',
             max_tokens: 500,
             system: systemPrompt,
             messages: session.conversationHistory
@@ -201,7 +201,7 @@ app.post('/api/workmode/process', async (req, res) => {
 
         // Ask Claude to extract actionable items from the transcript
         const extraction = await anthropic.messages.create({
-            model: 'claude-sonnet-4-5-20250514',
+            model: 'claude-sonnet-4-5-20241022',
             max_tokens: 1000,
             system: `You are JARVIS, analyzing a transcript of workplace conversation at Atelier Domingue, a steel fabrication shop. Extract any actionable items.
 

@@ -6,11 +6,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JARVIS">
-    <title>JARVIS — AD</title>
+    <title>JARVIS â AD</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{--bg:#050810;--surface:#0a0f1e;--border:#1a2440;--accent:#00d4ff;--accent2:#ff6b00;--green:#00ff88;--red:#ff2244;--text:#c8d8f0;--muted:#3a5070}
+        :root{--bg:#050810;--surface:#0a0f1e;--border:#1a2440;--accent:#00d4ff;--accent2:#ff6b00;--green:#00ff88;--red:#ff2244;--text:#c8d8f0;--muted:#3a5070;--work:#ff6b00}
         html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace}
         body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
         #app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
@@ -22,6 +22,7 @@
         #status-dot.thinking{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink 0.8s ease infinite}
         #status-dot.speaking{background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:blink 0.5s ease infinite}
         #status-dot.listening{background:var(--red);box-shadow:0 0 12px var(--red);animation:blink 0.4s ease infinite}
+        #status-dot.workmode{background:var(--work);box-shadow:0 0 12px var(--work);animation:blink 1.5s ease infinite}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
         #status-label{font-size:9px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;margin-right:8px}
         #viewfinder{position:relative;flex:1;overflow:hidden;background:#000;min-height:0}
@@ -33,7 +34,9 @@
         .corner.tr{top:12px;right:12px;border-width:2px 2px 0 0}
         .corner.bl{bottom:12px;left:12px;border-width:0 0 2px 2px}
         .corner.br{bottom:12px;right:12px;border-width:0 2px 2px 0}
+        .hud.workmode .corner{border-color:var(--work)}
         #scanline{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.25;animation:scan 4s ease-in-out infinite}
+        .hud.workmode #scanline{background:linear-gradient(90deg,transparent,var(--work),transparent)}
         @keyframes scan{0%{top:12px}50%{top:calc(100% - 12px)}100%{top:12px}}
         #flash{position:absolute;inset:0;background:white;opacity:0;pointer-events:none;transition:opacity 0.4s}
         #flash.pop{opacity:0.5;transition:opacity 0.05s}
@@ -53,6 +56,12 @@
         #response-tag{font-size:8px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
         #response-tag::after{content:'';flex:1;height:1px;background:var(--border)}
         #response-text{font-size:13px;line-height:1.7;color:var(--text)}
+        /* Work mode badge */
+        #work-badge{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,107,0,0.15);border:1px solid var(--work);border-radius:20px;padding:4px 14px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--work);letter-spacing:0.15em;display:none;pointer-events:none;z-index:10}
+        #work-badge.active{display:block;animation:badgePulse 2s ease infinite}
+        @keyframes badgePulse{0%,100%{opacity:1}50%{opacity:0.6}}
+        #work-stats{position:absolute;top:40px;right:12px;font-size:9px;color:var(--work);letter-spacing:0.1em;display:none;pointer-events:none;text-align:right}
+        #work-stats.active{display:block}
         #controls{background:var(--surface);border-top:1px solid var(--border);padding:10px 12px 16px;flex-shrink:0}
         #input-row{display:flex;gap:8px;margin-bottom:10px}
         #text-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;transition:border-color 0.2s}
@@ -61,24 +70,26 @@
         #send-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:10px 16px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
         #send-btn:disabled{opacity:0.3}
         #btn-row{display:flex;align-items:center;justify-content:center;gap:20px}
-        .icon-btn{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 18px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .icon-btn{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 18px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.2s}
+        .icon-btn.work-active{color:var(--work);border-color:var(--work);text-shadow:0 0 6px var(--work)}
         #mic-main{width:68px;height:68px;border-radius:50%;background:var(--accent);border:none;color:var(--bg);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;box-shadow:0 0 24px rgba(0,212,255,0.5);transition:all 0.2s}
         #mic-main.listening{background:var(--red);box-shadow:0 0 24px rgba(255,34,68,0.6);animation:pulse 1s ease infinite}
         #mic-main.thinking{background:var(--muted);box-shadow:none}
         @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,34,68,0.4)}50%{box-shadow:0 0 0 8px rgba(255,34,68,0)}}
+        /* Setup screen */
+        #setup-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;z-index:100}
+        .jarvis-logo{font-family:'Orbitron',monospace;font-size:32px;font-weight:900;color:var(--accent);letter-spacing:0.2em;animation:logoGlow 3s ease infinite}
+        @keyframes logoGlow{0%,100%{text-shadow:0 0 40px rgba(0,212,255,0.5)}50%{text-shadow:0 0 60px rgba(0,212,255,0.9)}}
+        .tagline{font-size:10px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase}
+        .setup-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:13px 16px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;text-align:center}
+        .setup-input:focus{border-color:var(--accent)}
+        #setup-submit{width:100%;background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:14px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:0.15em;cursor:pointer}
+        .key-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.6}
+        .key-note a{color:var(--accent);text-decoration:none}
         /* Audio unlock screen */
         #unlock-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:200;padding:32px;text-align:center}
         #unlock-btn{width:120px;height:120px;border-radius:50%;background:var(--accent);border:none;color:var(--bg);font-size:40px;cursor:pointer;box-shadow:0 0 40px rgba(0,212,255,0.6);animation:logoGlow 2s ease infinite}
         .unlock-label{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:0.15em;color:var(--muted)}
-        #apikey-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;z-index:100}
-        .jarvis-logo{font-family:'Orbitron',monospace;font-size:32px;font-weight:900;color:var(--accent);letter-spacing:0.2em;animation:logoGlow 3s ease infinite}
-        @keyframes logoGlow{0%,100%{text-shadow:0 0 40px rgba(0,212,255,0.5)}50%{text-shadow:0 0 60px rgba(0,212,255,0.9)}}
-        .tagline{font-size:10px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase}
-        #apikey-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:13px 16px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;text-align:center}
-        #apikey-input:focus{border-color:var(--accent)}
-        #apikey-submit{width:100%;background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:14px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:0.15em;cursor:pointer}
-        .key-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.6}
-        .key-note a{color:var(--accent);text-decoration:none}
         #reset-key-btn{background:none;border:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:9px;cursor:pointer;text-decoration:underline}
         #wake-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:8px;padding:3px 8px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s}
         #wake-btn.active{color:var(--green);border-color:var(--green);text-shadow:0 0 6px var(--green)}
@@ -86,20 +97,20 @@
 </head>
 <body>
 
-<!-- STEP 1: API Key -->
-<div id="apikey-screen">
+<!-- STEP 1: Server URL Setup -->
+<div id="setup-screen">
     <div class="jarvis-logo">JARVIS</div>
-    <div class="tagline">Atelier Domingue · Workshop AI</div>
-    <div class="key-note">Enter your Anthropic API key.<br>Saved permanently on this device.</div>
-    <input id="apikey-input" type="password" placeholder="sk-ant-..." autocomplete="off"/>
-    <button id="apikey-submit" onclick="initJarvis()">INITIALIZE SYSTEM</button>
-    <div class="key-note">Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+    <div class="tagline">Atelier Domingue Â· Workshop AI</div>
+    <div class="key-note">Enter your JARVIS server URL.<br>This connects to your personal backend.</div>
+    <input id="server-input" class="setup-input" type="url" placeholder="https://jarvis-ad-production.up.railway.app" value="https://jarvis-ad-production.up.railway.app" autocomplete="off"/>
+    <button id="setup-submit" onclick="initJarvis()">CONNECT TO JARVIS</button>
+    <div class="key-note">Server runs on <a href="https://railway.app" target="_blank">Railway</a> â always on, even when your laptop is off.</div>
 </div>
 
-<!-- STEP 2: Audio unlock (Safari requires a tap to enable audio) -->
+<!-- STEP 2: Audio unlock -->
 <div id="unlock-screen" style="display:none">
     <div class="jarvis-logo">JARVIS</div>
-    <button id="unlock-btn" onclick="unlockAudio()">🎙</button>
+    <button id="unlock-btn" onclick="unlockAudio()">ð</button>
     <div class="unlock-label">TAP TO ACTIVATE VOICE</div>
     <div class="key-note">Safari requires one tap to enable audio</div>
 </div>
@@ -110,7 +121,7 @@
         <div class="logo">JARVIS <span>/ AD</span></div>
         <div style="display:flex;align-items:center;gap:8px">
             <button id="wake-btn" class="active" onclick="toggleWakeWord()">HEY JARVIS</button>
-            <button id="reset-key-btn" onclick="forgetKey()">RESET KEY</button>
+            <button id="reset-key-btn" onclick="forgetServer()">RESET</button>
             <div id="status-label">STARTING</div>
             <div id="status-dot"></div>
         </div>
@@ -118,12 +129,14 @@
     <div id="viewfinder">
         <video id="camera-feed" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
-        <div class="hud">
+        <div class="hud" id="hud">
             <div class="corner tl"></div><div class="corner tr"></div>
             <div class="corner bl"></div><div class="corner br"></div>
             <div id="scanline"></div>
         </div>
         <div id="flash"></div>
+        <div id="work-badge">WORK MODE</div>
+        <div id="work-stats"></div>
         <div id="voice-wave">
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
@@ -138,57 +151,73 @@
             <button id="send-btn" onclick="sendQuery()">SEND</button>
         </div>
         <div id="btn-row">
-            <button class="icon-btn" onclick="clearAll()">✕ CLEAR</button>
-            <button id="mic-main" onclick="toggleVoice()">🎙</button>
-            <button class="icon-btn" onclick="forgetKey()">⚙ KEY</button>
+            <button class="icon-btn" id="work-btn" onclick="toggleWorkMode()">â¶ WORK</button>
+            <button id="mic-main" onclick="toggleVoice()">ð</button>
+            <button class="icon-btn" onclick="clearAll()">â CLEAR</button>
         </div>
     </div>
 </div>
 
 <script>
-const KEY_STORAGE='jarvis_ad_api_key';
-let apiKey='',capturedImage=null,stream=null,recognition=null,isListening=false,isSpeaking=false,audioUnlocked=false,conversationHistory=[];
+const SERVER_STORAGE='jarvis_ad_server_url';
+const DEVICE_STORAGE='jarvis_ad_device_id';
+let serverUrl='',deviceId='',capturedImage=null,stream=null,recognition=null,isListening=false,isSpeaking=false,audioUnlocked=false;
 let wakeWordRecognition=null,wakeWordActive=false,wakeWordEnabled=true;
+let workModeActive=false,workModeRecognition=null,workModeTranscript='',workModeChunkTimer=null,workModeTaskCount=0;
+
+// Generate a persistent device ID so the server tracks this device's conversations
+function getDeviceId(){
+    let id=localStorage.getItem(DEVICE_STORAGE);
+    if(!id){id='dev_'+Math.random().toString(36).substr(2,12);localStorage.setItem(DEVICE_STORAGE,id);}
+    return id;
+}
 
 window.addEventListener('DOMContentLoaded',()=>{
-    const saved=localStorage.getItem(KEY_STORAGE);
-    if(saved){apiKey=saved;showUnlock();}
+    deviceId=getDeviceId();
+    const saved=localStorage.getItem(SERVER_STORAGE);
+    if(saved){serverUrl=saved;showUnlock();}
     document.getElementById('text-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendQuery();});
 });
 
-/* ── Visibility change: kill speech & mic when leaving the page ── */
+/* ââ Visibility change: kill speech & mic when leaving the page ââ */
 document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
-        // Stop any speech immediately
         window.speechSynthesis?.cancel();
         isSpeaking=false;
-        // Stop listening if active
         if(isListening){stopListening();}
-        // Pause continuous mode but remember it was on
         window._wasInContinuousMode=window._continuousMode||false;
         window._continuousMode=false;
-        setStatus('PAUSED','');
+        // Don't stop work mode â it should keep running in background
+        if(!workModeActive) setStatus('PAUSED','');
     } else {
-        // Page is visible again — restore ready state
-        setStatus('READY','ready');
+        if(workModeActive){setStatus('WORK MODE','workmode');}
+        else{setStatus('READY','ready');}
         document.getElementById('mic-main').className='';
     }
 });
 
-function initJarvis(){
-    const val=document.getElementById('apikey-input').value.trim();
-    if(!val.startsWith('sk-ant-')&&!val.startsWith('sk-')){alert('Please enter a valid Anthropic API key');return;}
-    apiKey=val;
-    localStorage.setItem(KEY_STORAGE,apiKey);
+async function initJarvis(){
+    const val=document.getElementById('server-input').value.trim().replace(/\/$/,'');
+    if(!val){alert('Please enter your server URL');return;}
+    // Test connection
+    try{
+        const resp=await fetch(val+'/');
+        const data=await resp.json();
+        if(!data.status){throw new Error('Invalid response');}
+    }catch(e){
+        alert('Cannot connect to server. Check the URL and make sure the server is running.');
+        return;
+    }
+    serverUrl=val;
+    localStorage.setItem(SERVER_STORAGE,serverUrl);
     showUnlock();
 }
 
 function showUnlock(){
-    document.getElementById('apikey-screen').style.display='none';
+    document.getElementById('setup-screen').style.display='none';
     document.getElementById('unlock-screen').style.display='flex';
 }
 
-// Safari requires a direct user gesture to unlock audio
 function unlockAudio(){
     const utter=new SpeechSynthesisUtterance(' ');
     utter.volume=0;
@@ -198,7 +227,6 @@ function unlockAudio(){
         showApp();
     };
     window.speechSynthesis.speak(utter);
-    // Fallback if onend doesn't fire
     setTimeout(()=>{
         if(!audioUnlocked){
             audioUnlocked=true;
@@ -214,8 +242,8 @@ function showApp(){
     startCamera();
 }
 
-function forgetKey(){
-    if(confirm('Remove saved API key?')){localStorage.removeItem(KEY_STORAGE);location.reload();}
+function forgetServer(){
+    if(confirm('Disconnect from server?')){localStorage.removeItem(SERVER_STORAGE);location.reload();}
 }
 
 async function startCamera(){
@@ -224,7 +252,7 @@ async function startCamera(){
         stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
         document.getElementById('camera-feed').srcObject=stream;
         setStatus('READY','ready');
-        speak('JARVIS online. Tap the mic and talk to me.');
+        speak('JARVIS online. Connected to server. Tap the mic or say Hey JARVIS.');
     }catch(e){
         try{
             stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
@@ -233,7 +261,7 @@ async function startCamera(){
             speak('JARVIS online. Camera active.');
         }catch(e2){
             setStatus('READY','ready');
-            speak('JARVIS online. No camera detected — voice and text available.');
+            speak('JARVIS online. No camera â voice and text available.');
         }
     }
 }
@@ -250,41 +278,48 @@ function captureFrame(){
     return true;
 }
 
+/* ââ Main chat â now routes through backend ââ */
 async function sendQuery(overrideText){
     const input=document.getElementById('text-input');
     const question=overrideText||input.value.trim();
     if(!question)return;
 
+    // Check for work mode voice commands
+    const lower=question.toLowerCase();
+    if(lower.includes('work mode on')||lower.includes('start tracking')||lower.includes('start work mode')){
+        if(!workModeActive)toggleWorkMode();
+        speak('Work mode activated. I\'m listening.');
+        if(!overrideText)input.value='';
+        return;
+    }
+    if(lower.includes('work mode off')||lower.includes('stop tracking')||lower.includes('stop work mode')){
+        if(workModeActive)toggleWorkMode();
+        speak('Work mode off. Captured '+workModeTaskCount+' items.');
+        if(!overrideText)input.value='';
+        return;
+    }
+
     window.speechSynthesis?.cancel();
     isSpeaking=false;
-
     setStatus('THINKING','thinking');
     document.getElementById('send-btn').disabled=true;
     document.getElementById('mic-main').className='thinking';
     captureFrame();
 
-    const content=[];
-    if(capturedImage){content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:capturedImage}});}
-    content.push({type:'text',text:question});
-    conversationHistory.push({role:'user',content});
-
     try{
-        const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        const resp=await fetch(serverUrl+'/api/chat',{
             method:'POST',
-            headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+            headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
-                model:'claude-opus-4-5',max_tokens:300,
-                system:`You are JARVIS, personal AI assistant for Paul, General Manager of Atelier Domingue — a steel doors and windows fabrication shop. You have vision through a camera. Personality: confident, precise, direct. Like Tony Stark's JARVIS. Never sycophantic. Expertise: steel fabrication, welding, door/window manufacturing, production management, QC, material ID, equipment, measurements. CRITICAL: Keep ALL responses under 2 short sentences. They are spoken aloud. Be direct and punchy. Reference earlier conversation when relevant.`,
-                messages:conversationHistory.map(m=>({role:m.role,content:m.content}))
+                deviceId,
+                message:question,
+                image:capturedImage||undefined
             })
         });
         const data=await resp.json();
-        if(data.error)throw new Error(data.error.message);
-        const reply=data.content[0].text;
-        conversationHistory.push({role:'assistant',content:reply});
-        if(conversationHistory.length>20)conversationHistory=conversationHistory.slice(-16);
-        showResponse(reply);
-        speak(reply);
+        if(data.error)throw new Error(data.error);
+        showResponse(data.reply);
+        speak(data.reply);
         capturedImage=null;
         if(!overrideText)input.value='';
     }catch(err){
@@ -303,7 +338,6 @@ function showResponse(text){
 
 function speak(text){
     if(!window.speechSynthesis)return;
-    // Don't speak if page is hidden
     if(document.hidden)return;
     window.speechSynthesis.cancel();
     const utter=new SpeechSynthesisUtterance(text);
@@ -314,7 +348,8 @@ function speak(text){
     utter.onstart=()=>{isSpeaking=true;setStatus('SPEAKING','speaking');};
     utter.onend=()=>{
         isSpeaking=false;
-        setStatus('READY','ready');
+        if(workModeActive){setStatus('WORK MODE','workmode');}
+        else{setStatus('READY','ready');}
         document.getElementById('mic-main').className='';
         if(window._continuousMode){setTimeout(()=>startListening(),400);}
     };
@@ -353,13 +388,15 @@ function startListening(){
         isListening=false;
         document.getElementById('mic-main').className='';
         document.getElementById('voice-wave').classList.remove('active');
-        if(!isSpeaking)setStatus('READY','ready');
+        if(workModeActive){setStatus('WORK MODE','workmode');}
+        else if(!isSpeaking){setStatus('READY','ready');}
     };
     recognition.onerror=(e)=>{
         isListening=false;
         document.getElementById('mic-main').className='';
         document.getElementById('voice-wave').classList.remove('active');
-        setStatus('READY','ready');
+        if(workModeActive){setStatus('WORK MODE','workmode');}
+        else{setStatus('READY','ready');}
         if(window._continuousMode&&e.error==='no-speech'){setTimeout(()=>startListening(),500);}
     };
     recognition.start();
@@ -377,18 +414,159 @@ function setStatus(label,type){
 }
 
 function clearAll(){
-    capturedImage=null;conversationHistory=[];window._continuousMode=false;
+    capturedImage=null;window._continuousMode=false;
     stopListening();window.speechSynthesis?.cancel();
     document.getElementById('response-panel').classList.remove('open');
     document.getElementById('text-input').value='';
+    if(workModeActive){setStatus('WORK MODE','workmode');}
+    else{setStatus('READY','ready');}
+}
+
+/* ââ WORK MODE â passive listening that extracts tasks ââ */
+function toggleWorkMode(){
+    if(workModeActive){
+        stopWorkMode();
+    } else {
+        startWorkMode();
+    }
+}
+
+function startWorkMode(){
+    if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window)){
+        alert('Voice input not supported.');return;
+    }
+    workModeActive=true;
+    workModeTranscript='';
+    workModeTaskCount=0;
+
+    // Update UI
+    document.getElementById('work-btn').classList.add('work-active');
+    document.getElementById('work-btn').textContent='â  WORK';
+    document.getElementById('work-badge').classList.add('active');
+    document.getElementById('work-stats').classList.add('active');
+    document.getElementById('hud').classList.add('workmode');
+    updateWorkStats();
+    setStatus('WORK MODE','workmode');
+
+    // Stop wake word â work mode takes over the mic
+    stopWakeWordListener();
+
+    startWorkModeListening();
+
+    // Process transcript chunks every 30 seconds
+    workModeChunkTimer=setInterval(()=>processWorkModeChunk(),30000);
+}
+
+function stopWorkMode(){
+    workModeActive=false;
+    clearInterval(workModeChunkTimer);
+
+    // Process any remaining transcript
+    if(workModeTranscript.trim()){processWorkModeChunk();}
+
+    // Stop work mode recognition
+    try{workModeRecognition?.stop();}catch(e){}
+    workModeRecognition=null;
+
+    // Update UI
+    document.getElementById('work-btn').classList.remove('work-active');
+    document.getElementById('work-btn').textContent='â¶ WORK';
+    document.getElementById('work-badge').classList.remove('active');
+    document.getElementById('work-stats').classList.remove('active');
+    document.getElementById('hud').classList.remove('workmode');
     setStatus('READY','ready');
+
+    // Restart wake word
+    if(wakeWordEnabled)startWakeWordListener();
+}
+
+function startWorkModeListening(){
+    if(!workModeActive)return;
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    workModeRecognition=new SR();
+    workModeRecognition.continuous=true;
+    workModeRecognition.interimResults=false;
+    workModeRecognition.lang='en-US';
+
+    workModeRecognition.onresult=(e)=>{
+        for(let i=e.resultIndex;i<e.results.length;i++){
+            if(e.results[i].isFinal){
+                const text=e.results[i][0].transcript.trim();
+                if(text){
+                    workModeTranscript+=' '+text;
+
+                    // Check for stop commands
+                    const lower=text.toLowerCase();
+                    if(lower.includes('stop work mode')||lower.includes('work mode off')||lower.includes('stop tracking')){
+                        toggleWorkMode();
+                        speak('Work mode off. Captured '+workModeTaskCount+' items.');
+                        return;
+                    }
+
+                    // Check for direct JARVIS commands during work mode
+                    if(lower.startsWith('jarvis')||lower.startsWith('hey jarvis')){
+                        const command=text.replace(/^(hey\s+)?jarvis\s*/i,'').trim();
+                        if(command){
+                            sendQuery(command);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    workModeRecognition.onend=()=>{
+        // Auto-restart if work mode is still active
+        if(workModeActive&&!isListening){
+            setTimeout(()=>startWorkModeListening(),300);
+        }
+    };
+
+    workModeRecognition.onerror=(e)=>{
+        if(workModeActive&&!isListening){
+            const delay=e.error==='no-speech'?500:2000;
+            setTimeout(()=>startWorkModeListening(),delay);
+        }
+    };
+
+    try{workModeRecognition.start();}catch(e){}
+}
+
+async function processWorkModeChunk(){
+    const chunk=workModeTranscript.trim();
+    workModeTranscript='';
+    if(!chunk||chunk.length<10)return;
+
+    try{
+        const resp=await fetch(serverUrl+'/api/workmode/process',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({deviceId,transcript:chunk})
+        });
+        const data=await resp.json();
+        if(data.stored){
+            workModeTaskCount+=data.stored.tasks;
+            updateWorkStats();
+            if(data.stored.tasks>0){
+                // Brief audio confirmation
+                speak(data.stored.tasks+' task'+(data.stored.tasks>1?'s':'')+' captured.');
+            }
+        }
+    }catch(e){
+        console.error('Work mode processing failed:',e);
+    }
+}
+
+function updateWorkStats(){
+    document.getElementById('work-stats').textContent=workModeTaskCount+' ITEMS CAPTURED';
 }
 
 window.speechSynthesis?.addEventListener('voiceschanged',()=>{});
 
-/* ── "Hey JARVIS" wake word detection ── */
+/* ââ "Hey JARVIS" wake word detection ââ */
 function startWakeWordListener(){
-    if(!wakeWordEnabled||wakeWordActive||isListening||isSpeaking)return;
+    if(!wakeWordEnabled||wakeWordActive||isListening||isSpeaking||workModeActive)return;
     if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window))return;
 
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -397,22 +575,14 @@ function startWakeWordListener(){
     wakeWordRecognition.interimResults=true;
     wakeWordRecognition.lang='en-US';
 
-    wakeWordRecognition.onstart=()=>{
-        wakeWordActive=true;
-    };
+    wakeWordRecognition.onstart=()=>{wakeWordActive=true;};
 
     wakeWordRecognition.onresult=(e)=>{
-        // Scan all results (interim + final) for the wake word
         for(let i=e.resultIndex;i<e.results.length;i++){
             const transcript=e.results[i][0].transcript.toLowerCase().trim();
             if(transcript.includes('jarvis')||transcript.includes('jarv')){
-                // Wake word detected — stop background listener and activate main mic
                 stopWakeWordListener();
-                // Small delay to let the recognition fully stop
-                setTimeout(()=>{
-                    window._continuousMode=false; // Single query mode from wake word
-                    startListening();
-                },300);
+                setTimeout(()=>{window._continuousMode=false;startListening();},300);
                 return;
             }
         }
@@ -420,16 +590,14 @@ function startWakeWordListener(){
 
     wakeWordRecognition.onend=()=>{
         wakeWordActive=false;
-        // Auto-restart if still enabled and not doing something else
-        if(wakeWordEnabled&&!isListening&&!isSpeaking&&!document.hidden){
+        if(wakeWordEnabled&&!isListening&&!isSpeaking&&!document.hidden&&!workModeActive){
             setTimeout(()=>startWakeWordListener(),500);
         }
     };
 
     wakeWordRecognition.onerror=(e)=>{
         wakeWordActive=false;
-        // Restart on recoverable errors (no-speech, network, etc.)
-        if(wakeWordEnabled&&!isListening&&!isSpeaking&&!document.hidden){
+        if(wakeWordEnabled&&!isListening&&!isSpeaking&&!document.hidden&&!workModeActive){
             const delay=e.error==='no-speech'?300:2000;
             setTimeout(()=>startWakeWordListener(),delay);
         }
@@ -441,13 +609,8 @@ function startWakeWordListener(){
 function toggleWakeWord(){
     wakeWordEnabled=!wakeWordEnabled;
     const btn=document.getElementById('wake-btn');
-    if(wakeWordEnabled){
-        btn.classList.add('active');
-        startWakeWordListener();
-    } else {
-        btn.classList.remove('active');
-        stopWakeWordListener();
-    }
+    if(wakeWordEnabled){btn.classList.add('active');startWakeWordListener();}
+    else{btn.classList.remove('active');stopWakeWordListener();}
 }
 
 function stopWakeWordListener(){
@@ -456,98 +619,60 @@ function stopWakeWordListener(){
     wakeWordRecognition=null;
 }
 
-// Patch: restart wake word listener after JARVIS finishes speaking or query completes
+// Patch: manage wake word around speech
 const _originalSpeak=speak;
-speak=function(text){
-    stopWakeWordListener(); // Pause wake word during speech
-    _originalSpeak(text);
-};
+speak=function(text){stopWakeWordListener();_originalSpeak(text);};
 
-// Re-hook the onend of speechSynthesis utterances to restart wake word
 const _origSetStatus=setStatus;
 setStatus=function(label,type){
     _origSetStatus(label,type);
-    // When we return to READY, restart wake word
-    if(label==='READY'&&wakeWordEnabled&&!isListening&&!isSpeaking){
+    if(label==='READY'&&wakeWordEnabled&&!isListening&&!isSpeaking&&!workModeActive){
         setTimeout(()=>startWakeWordListener(),600);
     }
 };
 
-// Update visibility handler to also manage wake word
-const _origVisHandler=document.onvisibilitychange;
 document.addEventListener('visibilitychange',()=>{
-    if(document.hidden){
-        stopWakeWordListener();
-    } else if(wakeWordEnabled&&!isListening&&!isSpeaking){
+    if(document.hidden){stopWakeWordListener();}
+    else if(wakeWordEnabled&&!isListening&&!isSpeaking&&!workModeActive){
         setTimeout(()=>startWakeWordListener(),800);
     }
 });
 
-/* ── AirPods tap-to-activate via MediaSession API ── */
+/* ââ AirPods tap-to-activate via MediaSession API ââ */
 function setupMediaSession(){
     if(!('mediaSession'in navigator))return;
-
-    // Create a silent audio context to enable MediaSession
     try{
         const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
         const silentBuffer=audioCtx.createBuffer(1,1,22050);
         const source=audioCtx.createBufferSource();
-        source.buffer=silentBuffer;
-        source.connect(audioCtx.destination);
-        source.start();
+        source.buffer=silentBuffer;source.connect(audioCtx.destination);source.start();
     }catch(e){}
 
-    // Also create a silent <audio> element to keep media session alive
     const silentAudio=document.createElement('audio');
     silentAudio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-    silentAudio.loop=true;
-    silentAudio.volume=0.01;
+    silentAudio.loop=true;silentAudio.volume=0.01;
     silentAudio.play().catch(()=>{});
 
-    navigator.mediaSession.metadata=new MediaMetadata({
-        title:'JARVIS',
-        artist:'Atelier Domingue',
-        album:'Workshop AI'
-    });
+    navigator.mediaSession.metadata=new MediaMetadata({title:'JARVIS',artist:'Atelier Domingue',album:'Workshop AI'});
 
-    // Play/pause toggles the microphone — this is what AirPod taps trigger
     navigator.mediaSession.setActionHandler('play',()=>{
-        if(!isListening&&!isSpeaking){
-            stopWakeWordListener();
-            window._continuousMode=false;
-            startListening();
-        }
+        if(!isListening&&!isSpeaking){stopWakeWordListener();window._continuousMode=false;startListening();}
         silentAudio.play().catch(()=>{});
     });
-
     navigator.mediaSession.setActionHandler('pause',()=>{
-        if(isListening){
-            stopListening();
-            window._continuousMode=false;
-        } else if(isSpeaking){
-            window.speechSynthesis?.cancel();
-            isSpeaking=false;
-            setStatus('READY','ready');
-        }
+        if(isListening){stopListening();window._continuousMode=false;}
+        else if(isSpeaking){window.speechSynthesis?.cancel();isSpeaking=false;setStatus('READY','ready');}
         silentAudio.play().catch(()=>{});
     });
-
-    // Next/previous track can also be used (double/triple tap on some AirPods)
-    navigator.mediaSession.setActionHandler('nexttrack',()=>{
-        clearAll();
-    });
+    navigator.mediaSession.setActionHandler('nexttrack',()=>{toggleWorkMode();}); // Double-tap toggles work mode
     navigator.mediaSession.setActionHandler('previoustrack',null);
 }
 
-// Initialize wake word and MediaSession after app is shown
+// Initialize after app is shown
 const _origShowApp=showApp;
 showApp=function(){
     _origShowApp();
-    // Give the app a moment to settle, then start wake word + media session
-    setTimeout(()=>{
-        startWakeWordListener();
-        setupMediaSession();
-    },2000);
+    setTimeout(()=>{startWakeWordListener();setupMediaSession();},2000);
 };
 </script>
 </body>

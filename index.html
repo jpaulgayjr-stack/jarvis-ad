@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JARVIS">
-    <title>JARVIS â AD</title>
+    <title>JARVIS — AD</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -100,17 +100,17 @@
 <!-- STEP 1: Server URL Setup -->
 <div id="setup-screen">
     <div class="jarvis-logo">JARVIS</div>
-    <div class="tagline">Atelier Domingue Â· Workshop AI</div>
+    <div class="tagline">Atelier Domingue · Workshop AI</div>
     <div class="key-note">Enter your JARVIS server URL.<br>This connects to your personal backend.</div>
     <input id="server-input" class="setup-input" type="url" placeholder="https://jarvis-ad-production.up.railway.app" value="https://jarvis-ad-production.up.railway.app" autocomplete="off"/>
     <button id="setup-submit" onclick="initJarvis()">CONNECT TO JARVIS</button>
-    <div class="key-note">Server runs on <a href="https://railway.app" target="_blank">Railway</a> â always on, even when your laptop is off.</div>
+    <div class="key-note">Server runs on <a href="https://railway.app" target="_blank">Railway</a> — always on, even when your laptop is off.</div>
 </div>
 
 <!-- STEP 2: Audio unlock -->
 <div id="unlock-screen" style="display:none">
     <div class="jarvis-logo">JARVIS</div>
-    <button id="unlock-btn" onclick="unlockAudio()">ð</button>
+    <button id="unlock-btn" onclick="unlockAudio()">🎙</button>
     <div class="unlock-label">TAP TO ACTIVATE VOICE</div>
     <div class="key-note">Safari requires one tap to enable audio</div>
 </div>
@@ -151,9 +151,9 @@
             <button id="send-btn" onclick="sendQuery()">SEND</button>
         </div>
         <div id="btn-row">
-            <button class="icon-btn" id="work-btn" onclick="toggleWorkMode()">â¶ WORK</button>
-            <button id="mic-main" onclick="toggleVoice()">ð</button>
-            <button class="icon-btn" onclick="clearAll()">â CLEAR</button>
+            <button class="icon-btn" id="work-btn" onclick="toggleWorkMode()">▶ WORK</button>
+            <button id="mic-main" onclick="toggleVoice()">🎙</button>
+            <button class="icon-btn" onclick="clearAll()">✕ CLEAR</button>
         </div>
     </div>
 </div>
@@ -179,7 +179,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('text-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendQuery();});
 });
 
-/* ââ Visibility change: kill speech & mic when leaving the page ââ */
+/* ── Visibility change: kill speech & mic when leaving the page ── */
 document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
         window.speechSynthesis?.cancel();
@@ -187,7 +187,7 @@ document.addEventListener('visibilitychange',()=>{
         if(isListening){stopListening();}
         window._wasInContinuousMode=window._continuousMode||false;
         window._continuousMode=false;
-        // Don't stop work mode â it should keep running in background
+        // Don't stop work mode — it should keep running in background
         if(!workModeActive) setStatus('PAUSED','');
     } else {
         if(workModeActive){setStatus('WORK MODE','workmode');}
@@ -261,7 +261,7 @@ async function startCamera(){
             speak('JARVIS online. Camera active.');
         }catch(e2){
             setStatus('READY','ready');
-            speak('JARVIS online. No camera â voice and text available.');
+            speak('JARVIS online. No camera — voice and text available.');
         }
     }
 }
@@ -278,7 +278,7 @@ function captureFrame(){
     return true;
 }
 
-/* ââ Main chat â now routes through backend ââ */
+/* ── Main chat — now routes through backend ── */
 async function sendQuery(overrideText){
     const input=document.getElementById('text-input');
     const question=overrideText||input.value.trim();
@@ -422,7 +422,7 @@ function clearAll(){
     else{setStatus('READY','ready');}
 }
 
-/* ââ WORK MODE â passive listening that extracts tasks ââ */
+/* ── WORK MODE — passive listening that extracts tasks ── */
 function toggleWorkMode(){
     if(workModeActive){
         stopWorkMode();
@@ -441,14 +441,14 @@ function startWorkMode(){
 
     // Update UI
     document.getElementById('work-btn').classList.add('work-active');
-    document.getElementById('work-btn').textContent='â  WORK';
+    document.getElementById('work-btn').textContent='■ WORK';
     document.getElementById('work-badge').classList.add('active');
     document.getElementById('work-stats').classList.add('active');
     document.getElementById('hud').classList.add('workmode');
     updateWorkStats();
     setStatus('WORK MODE','workmode');
 
-    // Stop wake word â work mode takes over the mic
+    // Stop wake word — work mode takes over the mic
     stopWakeWordListener();
 
     startWorkModeListening();
@@ -470,7 +470,7 @@ function stopWorkMode(){
 
     // Update UI
     document.getElementById('work-btn').classList.remove('work-active');
-    document.getElementById('work-btn').textContent='â¶ WORK';
+    document.getElementById('work-btn').textContent='▶ WORK';
     document.getElementById('work-badge').classList.remove('active');
     document.getElementById('work-stats').classList.remove('active');
     document.getElementById('hud').classList.remove('workmode');
@@ -564,7 +564,7 @@ function updateWorkStats(){
 
 window.speechSynthesis?.addEventListener('voiceschanged',()=>{});
 
-/* ââ "Hey JARVIS" wake word detection ââ */
+/* ── "Hey JARVIS" wake word detection ── */
 function startWakeWordListener(){
     if(!wakeWordEnabled||wakeWordActive||isListening||isSpeaking||workModeActive)return;
     if(!('webkitSpeechRecognition'in window)&&!('SpeechRecognition'in window))return;
@@ -638,7 +638,7 @@ document.addEventListener('visibilitychange',()=>{
     }
 });
 
-/* ââ AirPods tap-to-activate via MediaSession API ââ */
+/* ── AirPods tap-to-activate via MediaSession API ── */
 function setupMediaSession(){
     if(!('mediaSession'in navigator))return;
     try{

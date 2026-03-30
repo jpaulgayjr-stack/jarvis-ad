@@ -1,4 +1,4 @@
-import 'dotenv/config';
+himport 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -172,7 +172,7 @@ app.post('/api/chat', async (req, res) => {
         const systemPrompt = await buildSystemPrompt(session);
 
         const response = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-sonnet-4-6',
             max_tokens: 500,
             system: systemPrompt,
             messages: session.conversationHistory
@@ -201,7 +201,7 @@ app.post('/api/workmode/process', async (req, res) => {
 
         // Ask Claude to extract actionable items from the transcript
         const extraction = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-sonnet-4-6',
             max_tokens: 1000,
             system: `You are JARVIS, analyzing a transcript of workplace conversation at Atelier Domingue, a steel fabrication shop. Extract any actionable items.
 
@@ -281,7 +281,7 @@ app.get('/api/memory', async (req, res) => {
 // After every chat, silently check if there's a task or memory to store
 async function extractAndStore(userMessage, assistantReply, session) {
     const extraction = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
         system: `Extract any tasks or memories from this exchange. Return JSON only:
 { "tasks": [{ "title": "...", "details": "...", "priority": "High/Medium/Low", "assignedTo": "...", "dueDate": "YYYY-MM-DD or null", "category": "..." }], "memories": [{ "summary": "...", "type": "...", "tags": "..." }] }

@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
 
-// ── Config ──
+// ââ Config ââ
 const PORT = process.env.PORT || 3000;
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
@@ -17,7 +17,7 @@ app.use(cors({
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ── In-memory conversation store (per device, keyed by device ID) ──
+// ââ In-memory conversation store (per device, keyed by device ID) ââ
 // In production this moves to Airtable, but this works for now
 const sessions = new Map();
 
@@ -33,7 +33,7 @@ function getSession(deviceId) {
     return sessions.get(deviceId);
 }
 
-// ── Airtable helpers ──
+// ââ Airtable helpers ââ
 const AIRTABLE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}`;
 
 async function airtableRequest(tableName, method = 'GET', body = null) {
@@ -98,7 +98,7 @@ async function getRecentMemories(limit = 20) {
     return resp.json();
 }
 
-// ── System prompt with memory context ──
+// ââ System prompt with memory context ââ
 async function buildSystemPrompt(session) {
     let memoryContext = '';
     try {
@@ -111,7 +111,7 @@ async function buildSystemPrompt(session) {
             memoryContext += '\n\nRECENT TASKS:\n';
             tasks.records.forEach(r => {
                 const f = r.fields;
-                memoryContext += `- [${f.Status}] ${f.Task}${f['Assigned To'] ? ' → ' + f['Assigned To'] : ''}${f['Due Date'] ? ' (due ' + f['Due Date'] + ')' : ''}\n`;
+                memoryContext += `- [${f.Status}] ${f.Task}${f['Assigned To'] ? ' â ' + f['Assigned To'] : ''}${f['Due Date'] ? ' (due ' + f['Due Date'] + ')' : ''}\n`;
             });
         }
 
@@ -126,21 +126,24 @@ async function buildSystemPrompt(session) {
         console.error('Failed to load memory context:', e.message);
     }
 
-    return `You are JARVIS, personal AI assistant for Paul, General Manager of Atelier Domingue — a steel doors and windows fabrication shop in Louisiana. You have vision through a camera.
+    return `You are JARVIS, personal AI assistant for Paul, General Manager of Atelier Domingue â a steel doors and windows fabrication shop in Louisiana. You have vision through a camera.
 
 Personality: confident, precise, direct. Like Tony Stark's JARVIS. Never sycophantic. You remember everything.
 
 Expertise: steel fabrication, welding, door/window manufacturing, production management, QC, material ID, equipment, measurements, shop operations, scheduling.
 
+SYSTEM INTEGRATION:
+You ARE connected to Airtable. Your tasks and memory are stored in and loaded from Airtable automatically. The RECENT TASKS and RECENT MEMORY sections below are live data pulled from Airtable right now. When Paul asks about tasks, Airtable, or your memory â reference this data confidently. You can also create new tasks and memories â they are automatically saved to Airtable after each conversation.
+
 CRITICAL RULES:
 1. Keep ALL spoken responses under 2 short sentences. They are spoken aloud. Be direct and punchy.
-2. Reference earlier conversation and memory when relevant — you have a persistent memory.
-3. When the user mentions a task, action item, deadline, or reminder — extract it and include it in your response metadata.
-4. When you learn something new about staff, projects, clients, or operations — note it as a memory.
+2. Reference earlier conversation and memory when relevant â you have a persistent memory backed by Airtable.
+3. When the user mentions a task, action item, deadline, or reminder â extract it and include it in your response metadata. It will be saved to Airtable automatically.
+4. When you learn something new about staff, projects, clients, or operations â note it as a memory. It will be saved to Airtable automatically.
 ${memoryContext}`;
 }
 
-// ── ROUTES ──
+// ââ ROUTES ââ
 
 // Health check
 app.get('/', (req, res) => {
@@ -217,7 +220,7 @@ Return JSON only, no other text:
 }
 
 If nothing actionable, return { "tasks": [], "memories": [], "relevant": false }.
-Be selective — only capture things that matter. Skip small talk and noise.`,
+Be selective â only capture things that matter. Skip small talk and noise.`,
             messages: [{ role: 'user', content: `Transcript chunk:\n\n${transcript}` }]
         });
 
@@ -277,7 +280,7 @@ app.get('/api/memory', async (req, res) => {
     }
 });
 
-// ── Background extraction ──
+// ââ Background extraction ââ
 // After every chat, silently check if there's a task or memory to store
 async function extractAndStore(userMessage, assistantReply, session) {
     const extraction = await anthropic.messages.create({
@@ -309,11 +312,11 @@ If nothing to extract, return { "tasks": [], "memories": [] }`,
     }
 }
 
-// ── Start server ──
+// ââ Start server ââ
 app.listen(PORT, () => {
-    console.log(`\n  ╔══════════════════════════════════════╗`);
-    console.log(`  ║  JARVIS Backend — Atelier Domingue   ║`);
-    console.log(`  ║  Port: ${PORT}                          ║`);
-    console.log(`  ║  Status: ONLINE                      ║`);
-    console.log(`  ╚══════════════════════════════════════╝\n`);
+    console.log(`\n  ââââââââââââââââââââââââââââââââââââââââ`);
+    console.log(`  â  JARVIS Backend â Atelier Domingue   â`);
+    console.log(`  â  Port: ${PORT}                          â`);
+    console.log(`  â  Status: ONLINE                      â`);
+    console.log(`  ââââââââââââââââââââââââââââââââââââââââ\n`);
 });
